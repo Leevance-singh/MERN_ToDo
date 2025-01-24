@@ -1,0 +1,432 @@
+revise my code very deeply and in a good way :
+app.jsx :
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+import Sidebar from './components/navigation_bars/sidebar';
+import Topbar from './components/navigation_bars/topbar';
+import Topbar1 from './components/navigation_bars/topbar1';
+import TasksHolder from './components/todo_sections/tasksholder';
+import { Side_collapsable_menu } from './components/menu/side_collapsable_menu';
+import TaskCreationDialog from './components/TaskCreationDialog';
+import './index.css';
+
+const App = () => {
+  // State Management
+  const [tasks, setTasks] = useState({ todo: [], inProgress: [], done: [] });
+  const [isMenuVisible, setMenuVisible] = useState(false);
+  const [isDialogVisible, setDialogVisible] = useState(false);
+  const [isDarkMode, setDarkMode] = useState(false);
+
+  // Fetch data from the backend on component mount
+  useEffect(() => {
+    fetchTasksFromBackend();
+  }, []);
+
+  // Fetch tasks from the backend
+  const fetchTasksFromBackend = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/entiredata');
+      const data = response.data[0]?.todo_for_id || { todo: [], inProgress: [], done: [] };
+      setTasks(data); // Set tasks from the fetched data
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+    }
+  };
+
+  // Toggle menu visibility
+  const toggleMenu = () => setMenuVisible((prev) => !prev);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => !prev);
+    document.documentElement.classList.toggle('dark', !isDarkMode);
+  };
+
+  // Add a new task
+  const addTask = async (newTask, section) => {
+    try {
+      // Update backend with new task
+      const updatedTasks = {
+        ...tasks,
+        [section]: [...tasks[section], newTask],
+      };
+      await axios.post('http://localhost:3000/updateTasks', { tasks: updatedTasks }); // Create this endpoint in your backend
+      setTasks(updatedTasks); // Update state after successful backend update
+    } catch (err) {
+      console.error('Error adding task:', err);
+    }
+  };
+
+  return (
+    <div className="app-container flex h-screen w-full overflow-auto">
+      <Sidebar toggleMenu={toggleMenu} toggleDarkMode={toggleDarkMode} />
+      <Side_collapsable_menu isVisible={isMenuVisible} toggleMenu={toggleMenu} />
+      <div className="main-content flex flex-col w-full h-full ml-16">
+        <Topbar />
+        <Topbar1 openTaskDialog={() => setDialogVisible(true)} />
+        <div className="content-area flex-grow overflow-auto bg-slate-600">
+          <TasksHolder tasks={tasks} setTasks={setTasks} />
+        </div>
+      </div>
+      {isDialogVisible && (
+        <TaskCreationDialog
+          closeDialog={() => setDialogVisible(false)}
+          addTask={addTask}
+        />
+      )}
+    </div>
+  );
+};
+
+export default App;
+import React, { useState } from 'react';
+
+const TaskCreationDialog = ({ closeDialog, addTask }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    progress: 0,
+    total: 10,
+    date: '',
+    comments: 0,
+    pins: 0,
+  });
+  const [section, setSection] = useState('todo');
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = () => {
+    const newTask = { ...formData, id: Date.now() }; // Generate unique ID
+    addTask(newTask, section);
+    closeDialog();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">
+          Create New Task
+        </h3>
+        <div className="space-y-3">
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            placeholder="Task Title"
+            className="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-blue-300"
+          />
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Description"
+            className="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-blue-300"
+          ></textarea>
+          <label htmlFor="progress">Progress </label>
+          <input
+            type="number"
+            name="progress"
+            value={formData.progress}
+            onChange={handleChange}
+            placeholder="Progress"
+            className="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-blue-300"
+          />
+          <label htmlFor="progress">Progress out of: </label>
+          <input
+            type="number"
+            name="total"
+            value={formData.total}
+            onChange={handleChange}
+            placeholder="Total"
+            className="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-blue-300"
+          />
+          <label htmlFor="Date">Date Created:</label>
+          <input
+            type="date"
+            name="date"
+            value={Date.now()}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-blue-300"
+          />
+          <input
+            type="number"
+            name="comments"
+            value={formData.comments}
+            onChange={handleChange}
+            placeholder="Comments"
+            className="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-blue-300"
+          />
+          <label htmlFor="pins">Pins </label>
+          <input
+            type="number"
+            name="pins"
+            value={formData.pins}
+            onChange={handleChange}
+            placeholder="Pins"
+            className="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-blue-300"
+          />
+          <label htmlFor="section">Select Section : </label>
+          <select
+            name="section"
+            value={section}
+            onChange={(e) => setSection(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-blue-300"
+          >
+            <option value="todo">To Do</option>
+            <option value="inProgress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={closeDialog}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="ml-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskCreationDialog;
+import React from "react";
+
+const TaskCard = ({ id, section, title, description, progress, total, date, comments, pins, deleteTask }) => {
+  const progressPercentage = (progress / total) * 100;
+
+  return (
+    <div className="task-card border border-gray-300 dark:border-gray-700 rounded-lg p-4 mb-4 bg-white dark:bg-gray-800">
+      <div className="task-header flex justify-between items-center">
+        <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h4>
+        {/* Add onClick handler for task deletion */}
+        <span
+          className="dots text-gray-500 dark:text-gray-400 cursor-pointer"
+          onClick={() => deleteTask(id, section)}
+        >
+          ...
+        </span>
+      </div>
+      <p className="task-description my-3 text-gray-700 dark:text-gray-300">{description}</p>
+      <div className="task-progress text-sm text-gray-600 dark:text-gray-400">
+        <span>{`${progress}/${total}`}</span>
+      </div>
+      <div className="progress-bar h-2 bg-gray-200 dark:bg-gray-700 rounded-lg mt-2 mb-4">
+        <div
+          className="progress-fill h-full bg-orange-500"
+          style={{ width: `${progressPercentage}%` }}
+        ></div>
+      </div>
+      <div className="task-footer flex justify-between items-center">
+        <span className="task-date bg-gray-200 dark:bg-gray-700 text-sm text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full">
+          {date}
+        </span>
+        <div className="task-icons flex gap-3 text-gray-600 dark:text-gray-300">
+          <span className="icon text-sm">💬 {comments}</span>
+          <span className="icon text-sm">📌 {pins}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskCard;
+import React from 'react';
+import { Draggable } from 'react-beautiful-dnd';
+import TaskCard from './TaskCard';
+
+const ToDo = ({ tasks , deleteTask}) => (
+  <div className="task-section flex flex-col h-full border border-gray-300 dark:border-gray-700 rounded-lg p-5 bg-gray-100 dark:bg-gray-800">
+    <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">To Do</h3>
+    <div className="task-list flex-grow overflow-y-auto pr-2">
+      {tasks.map((task, index) => (
+
+        <Draggable key={task.id} draggableId={task.id} index={index}>
+          {(provided) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.draggableProps}
+              {...provided.dragHandleProps}
+            >
+              <button
+                onClick={() => deleteTask(task.id)}
+                className="text-red-500 hover:underline text-sm"
+              >Delete</button>
+              <TaskCard {...task} />
+            </div>
+          )}
+        </Draggable>
+      ))}
+    </div>
+  </div>
+);
+
+export default ToDo;
+import React from "react";
+
+const TaskCard = ({ id, section, title, description, progress, total, date, comments, pins, deleteTask }) => {
+  const progressPercentage = (progress / total) * 100;
+
+  return (
+    <div className="task-card border border-gray-300 dark:border-gray-700 rounded-lg p-4 mb-4 bg-white dark:bg-gray-800">
+      <div className="task-header flex justify-between items-center">
+        <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h4>
+        {/* Add onClick handler for task deletion */}
+        <span
+          className="dots text-gray-500 dark:text-gray-400 cursor-pointer"
+          onClick={() => deleteTask(id, section)}
+        >
+          ...
+        </span>
+      </div>
+      <p className="task-description my-3 text-gray-700 dark:text-gray-300">{description}</p>
+      <div className="task-progress text-sm text-gray-600 dark:text-gray-400">
+        <span>{`${progress}/${total}`}</span>
+      </div>
+      <div className="progress-bar h-2 bg-gray-200 dark:bg-gray-700 rounded-lg mt-2 mb-4">
+        <div
+          className="progress-fill h-full bg-orange-500"
+          style={{ width: `${progressPercentage}%` }}
+        ></div>
+      </div>
+      <div className="task-footer flex justify-between items-center">
+        <span className="task-date bg-gray-200 dark:bg-gray-700 text-sm text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full">
+          {date}
+        </span>
+        <div className="task-icons flex gap-3 text-gray-600 dark:text-gray-300">
+          <span className="icon text-sm">💬 {comments}</span>
+          <span className="icon text-sm">📌 {pins}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskCard;
+import React from 'react';
+import { DragDropContext, Droppable } from 'react-beautiful-dnd';
+import ToDo from './section1_todo';
+import InProgress from './section2_inprogress';
+import Done from './section3_done';
+import axios from 'axios';
+
+const TasksHolder = ({ tasks, setTasks }) => {
+  // Delete task function
+  const deleteTask = async (id, section) => {
+    try {
+      // Call the backend API to delete the task
+      await axios.delete(`http://localhost:3000/deleteTask/${id}`);
+
+      // Update state to remove the task locally
+      const updatedSection = tasks[section].filter((task) => task.id !== id);
+      setTasks((prevTasks) => ({
+        ...prevTasks,
+        [section]: updatedSection,
+      }));
+    } catch (err) {
+      console.error('Error deleting task:', err);
+    }
+  };
+
+  const onDragEnd = (result) => {
+    const { source, destination } = result;
+
+    // If dropped outside a droppable area, do nothing
+    if (!destination) return;
+
+    const sourceList = tasks[source.droppableId];
+    const destinationList = tasks[destination.droppableId];
+    const [movedTask] = sourceList.splice(source.index, 1);
+
+    destinationList.splice(destination.index, 0, movedTask);
+
+    const updatedTasks = {
+      ...tasks,
+      [source.droppableId]: sourceList,
+      [destination.droppableId]: destinationList,
+    };
+
+    setTasks(updatedTasks);
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+  };
+
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="tasks-holder flex flex-col gap-5 flex-grow h-[calc(100vh-140px)] p-5 overflow-auto sm:flex-row sm:overflow-visible bg-gray-100 dark:bg-gray-900">
+        {['todo', 'inProgress', 'done'].map((section) => (
+          <Droppable droppableId={section} key={section}>
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="flex-1 min-h-full"
+              >
+                {section === 'todo' && (
+                  <ToDo tasks={tasks[section]} deleteTask={(id) => deleteTask(id, section)} />
+                )}
+                {section === 'inProgress' && (
+                  <InProgress
+                    tasks={tasks[section]}
+                    deleteTask={(id) => deleteTask(id, section)}
+                  />
+                )}
+                {section === 'done' && (
+                  <Done tasks={tasks[section]} deleteTask={(id) => deleteTask(id, section)} />
+                )}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        ))}
+      </div>
+    </DragDropContext>
+  );
+};
+
+export default TasksHolder;
+import mongoose from 'mongoose';
+
+const TaskSchema = mongoose.Schema({
+  id: { type: String, required: true },         // Task ID
+  title: { type: String, required: true },      // Title of the task
+  description: { type: String, required: true },// Description of the task
+  progress: { type: Number, required: true },   // Progress value (e.g. 7 out of 10)
+  total: { type: Number, required: true },      // Total number (e.g. 10)
+  date: { type: String, required: true },       // Date (e.g. "24 Aug 2022")
+  comments: { type: Number, required: true },   // Number of comments
+  pins: { type: Number, required: true },       // Number of pins
+});
+
+const todoReactStoreSchema = mongoose.Schema({
+  user_id: { type: String, required: true }, // User ID for the user
+  todo_for_id: {
+    todo: [TaskSchema],
+    inProgress: [TaskSchema],
+    done: [TaskSchema],
+  },
+});
+
+const todoReactStoreModel = mongoose.model('todoReactStore', todoReactStoreSchema,'todoReactStore');
+
+export {todoReactStoreModel};
+
+
+now you need to do only 1 thing , when i click any TaskCard, it opens the TaskCreationDialog and then i can edit the task and save it.
+
+but to do that you need to pass the task data to the TaskCreationDialog component and then you can edit the task data and save it.
+
+ie updatea functioanlity is all i need for now.
+
+also tell me if you'll need any other file or any other help or information to get the job done. don't mess this up please as this is ver y dear project to me.
