@@ -1,3 +1,4 @@
+// App.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
@@ -31,7 +32,6 @@ const App = () => {
   };
 
   const toggleMenu = () => setMenuVisible((prev) => !prev);
-
   const toggleDarkMode = () => {
     setDarkMode((prev) => !prev);
     document.documentElement.classList.toggle('dark', !isDarkMode);

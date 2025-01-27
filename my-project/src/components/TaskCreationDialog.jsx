@@ -20,10 +20,15 @@ const TaskCreationDialog = ({ closeDialog, addTask, updateTask, task }) => {
   };
 
   const handleSubmit = () => {
+    const finalTask = {
+      ...formData,
+      date: formData.date || new Date().toISOString().split('T')[0]
+    };
+    
     if (isEdit) {
-      updateTask({ ...formData }, section);
+      updateTask(finalTask, section);
     } else {
-      addTask({ ...formData }, section);
+      addTask(finalTask, section);
     }
     closeDialog();
   };
