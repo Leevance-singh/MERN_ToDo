@@ -1,7 +1,8 @@
-// App.js
+//...........................................................................Importing Core Components
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
+//...........................................................................Importing Custom Components
 import Sidebar from './components/navigation_bars/sidebar';
 import Topbar from './components/navigation_bars/topbar';
 import Topbar1 from './components/navigation_bars/topbar1';
@@ -10,6 +11,7 @@ import { Side_collapsable_menu } from './components/menu/side_collapsable_menu';
 import TaskCreationDialog from './components/TaskCreationDialog';
 import './index.css';
 
+//...........................................................................Main app Component
 const App = () => {
   const [tasks, setTasks] = useState({ todo: [], inProgress: [], done: [] });
   const [isMenuVisible, setMenuVisible] = useState(false);
@@ -17,14 +19,12 @@ const App = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isDarkMode, setDarkMode] = useState(false);
 
-  useEffect(() => {
-    fetchTasksFromBackend();
-  }, []);
-
+//...........................................................................Functions/Functionalities
   const fetchTasksFromBackend = async () => {
     try {
       const response = await axios.get('http://localhost:3000/entiredata');
-      const data = response.data[0]?.todo_for_id || { todo: [], inProgress: [], done: [] };
+      const data = response.data[0]?.todo_for_id;
+      // const data = response.data[0]?.todo_for_id || { todo: [], inProgress: [], done: [] };   currently not usable coz schema change in progress hehehe
       setTasks(data);
     } catch (err) {
       console.error('Error fetching tasks:', err);
@@ -32,21 +32,21 @@ const App = () => {
   };
 
   const toggleMenu = () => setMenuVisible((prev) => !prev);
+
   const toggleDarkMode = () => {
     setDarkMode((prev) => !prev);
     document.documentElement.classList.toggle('dark', !isDarkMode);
   };
-
+  
   const openTaskDialog = (task) => {
     setSelectedTask(task);
-    setDialogVisible(true);
+    setDialogVisible(true); 
   };
 
   const closeTaskDialog = () => {
     setSelectedTask(null);
     setDialogVisible(false);
   };
-
   const updateTask = async (updatedTask, section) => {
     try {
       const updatedTasks = {
@@ -61,7 +61,12 @@ const App = () => {
       console.error('Error updating task:', err);
     }
   };
+//...........................................................................Use Effects
+  useEffect(() => {
+    fetchTasksFromBackend();
+  }, []);
 
+//...........................................................................Main return statement
   return (
     <div className="app-container flex h-screen w-full overflow-auto">
       <Sidebar toggleMenu={toggleMenu} toggleDarkMode={toggleDarkMode} />
